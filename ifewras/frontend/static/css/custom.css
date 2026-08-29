@@ -1,0 +1,108 @@
+/* Custom tactical styles for IFEWRAS Dashboard */
+
+@keyframes pulse-red {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+    }
+}
+
+@keyframes pulse-orange {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+    }
+}
+
+.radar-pulse-red {
+    animation: pulse-red 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.radar-pulse-orange {
+    animation: pulse-orange 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Leaflet dark map customizations */
+.leaflet-container {
+    background: #090d16 !important;
+    font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+}
+
+.leaflet-popup-tip {
+    background: #0f172a !important;
+}
+
+/* Custom Gauge Pin Styles */
+.gauge-marker-pin {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 11px;
+    color: #ffffff;
+}
+
+/* Glassmorphic card styling */
+.glass-panel {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(51, 65, 85, 0.6);
+}
+
+.tab-btn.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #3b82f6;
+}
+
+/* WhatsApp bubble */
+.whatsapp-chat-bubble {
+    background: #054c44;
+    border-radius: 8px;
+    border-top-left-radius: 0;
+    color: #e9edef;
+    position: relative;
+}
+
+.whatsapp-chat-bubble::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -8px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid #054c44;
+    border-left: 8px solid transparent;
+}

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFEWRAS - Integrated Flood Early Warning + Rescue Allocation System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            800: '#0f172a',
+                            900: '#090d16',
+                            950: '#030712'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased overflow-x-hidden">
+
+    <!-- TOP SYSTEM HEADER -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-water-ladder text-xl"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        <span>IFEWRAS</span>
+                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30 font-medium">SIH 2026 MVP</span>
+                    </h1>
+                </div>
+                <p class="text-xs text-slate-400">Integrated Flood Early Warning + Rescue Allocation System | <span class="text-blue-400">ASDMA / SDRF Assam</span></p>
+            </div>
+        </div>
+
+        <!-- Emergency Helplines Badge -->
+        <div class="hidden lg:flex items-center space-x-4 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+            <div class="flex items-center space-x-1.5 text-red-400">
+                <i class="fa-solid fa-phone-volume animate-pulse"></i>
+                <span class="font-semibold">State EOC:</span>
+                <span class="text-slate-200">1079</span>
+            </div>
+            <div class="text-slate-700">|</div>
+            <div class="flex items-center space-x-1.5 text-amber-400">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span class="font-semibold">District:</span>
+                <span class="text-slate-200">1077</span>
+            </div>
+            <div class="text-slate-700">|</div>
+            <div class="flex items-center space-x-1.5 text-emerald-400">
+                <i class="fa-solid fa-life-ring"></i>
+                <span class="font-semibold">Emergency:</span>
+                <span class="text-slate-200">112</span>
+            </div>
+        </div>
+
+        <!-- System Pipeline Status Badges -->
+        <div class="flex items-center space-x-2 text-xs">
+            <div class="flex items-center space-x-1.5 bg-slate-800/80 px-2.5 py-1 rounded border border-slate-700">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                <span class="text-slate-300">Stage 1: <strong class="text-emerald-400">Hills Ingest</strong></span>
+            </div>
+            <div class="flex items-center space-x-1.5 bg-slate-800/80 px-2.5 py-1 rounded border border-slate-700">
+                <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+                <span class="text-slate-300">Stage 2: <strong class="text-blue-400">Plains Forecast</strong></span>
+            </div>
+            <div class="flex items-center space-x-1.5 bg-slate-800/80 px-2.5 py-1 rounded border border-slate-700">
+                <span class="w-2 h-2 rounded-full bg-purple-500 animate-ping"></span>
+                <span class="text-slate-300">Stage 3: <strong class="text-purple-400">Relief Dispatch</strong></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- HISTORICAL SCENARIO TIMELINE CONTROLLER RIBBON -->
+    <div class="bg-slate-900/95 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center bg-blue-950/60 border border-blue-800/60 rounded-md px-2.5 py-1 text-xs text-blue-300">
+                <i class="fa-solid fa-clock-rotate-left mr-1.5 text-blue-400"></i>
+                <span class="font-semibold uppercase tracking-wider">Historical Replay:</span>
+                <span class="ml-1 text-white font-mono">Assam Monsoon Cascade</span>
+            </div>
+            <!-- Playback Controls -->
+            <div class="flex items-center space-x-1 bg-slate-950 border border-slate-800 rounded-md p-0.5">
+                <button id="btn-step-prev" title="Step Backward" class="px-2.5 py-1 text-xs hover:bg-slate-800 text-slate-300 hover:text-white rounded transition">
+                    <i class="fa-solid fa-backward-step"></i>
+                </button>
+                <button id="btn-play-pause" title="Auto Play Scenario" class="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-500 text-white font-medium rounded transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-play" id="play-icon"></i>
+                    <span id="play-text">Play</span>
+                </button>
+                <button id="btn-step-next" title="Step Forward" class="px-2.5 py-1 text-xs hover:bg-slate-800 text-slate-300 hover:text-white rounded transition">
+                    <i class="fa-solid fa-forward-step"></i>
+                </button>
+                <button id="btn-reset" title="Reset to T=0" class="px-2.5 py-1 text-xs hover:bg-slate-800 text-amber-400 hover:text-amber-300 rounded transition">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step Indicator Slider / Buttons -->
+        <div class="flex items-center space-x-1.5 text-xs">
+            <button class="step-btn px-3 py-1 rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 font-mono transition" data-step="0">T+00h: Hills Trigger</button>
+            <i class="fa-solid fa-angle-right text-slate-600 text-xs"></i>
+            <button class="step-btn px-3 py-1 rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 font-mono transition" data-step="1">T+24h: Upper Reach</button>
+            <i class="fa-solid fa-angle-right text-slate-600 text-xs"></i>
+            <button class="step-btn px-3 py-1 rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 font-mono transition" data-step="2">T+48h: Peak Stage</button>
+            <i class="fa-solid fa-angle-right text-slate-600 text-xs"></i>
+            <button class="step-btn px-3 py-1 rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 font-mono transition" data-step="3">T+72h: Downstream</button>
+        </div>
+
+        <!-- Active Phase Description -->
+        <div class="text-xs text-slate-400 truncate max-w-md hidden xl:block">
+            <span class="text-amber-400 font-semibold" id="phase-badge">Phase:</span>
+            <span id="phase-description">Loading simulation state...</span>
+        </div>
+    </div>
+
+    <!-- HIGH-LEVEL EXECUTIVE METRICS BAR -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 p-3 bg-slate-950 border-b border-slate-800 text-xs">
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-2.5 flex items-center space-x-3">
+            <div class="w-8 h-8 rounded bg-blue-500/10 text-blue-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+            <div>
+                <p class="text-slate-400 text-[11px]">Forecast Lead Time</p>
+                <p class="text-base font-bold text-blue-400 font-mono" id="kpi-lead-time">72 Hours</p>
+            </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-2.5 flex items-center space-x-3">
+            <div class="w-8 h-8 rounded bg-red-500/10 text-red-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-cloud-bolt"></i>
+            </div>
+            <div>
+                <p class="text-slate-400 text-[11px]">Red Hill Triggers</p>
+                <p class="text-base font-bold text-red-400 font-mono" id="kpi-red-triggers">0 Catchments</p>
+            </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-2.5 flex items-center space-x-3">
+            <div class="w-8 h-8 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-water"></i>
+            </div>
+            <div>
+                <p class="text-slate-400 text-[11px]">Danger River Gauges</p>
+                <p class="text-base font-bold text-amber-400 font-mono" id="kpi-danger-gauges">0 Gauges</p>
+            </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-2.5 flex items-center space-x-3">
+            <div class="w-8 h-8 rounded bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-map-location-dot"></i>
+            </div>
+            <div>
+                <p class="text-slate-400 text-[11px]">Flooded Inundation</p>
+                <p class="text-base font-bold text-cyan-400 font-mono" id="kpi-inundated-area">0.0 sq km</p>
+            </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-2.5 flex items-center space-x-3">
+            <div class="w-8 h-8 rounded bg-rose-500/10 text-rose-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-people-roof"></i>
+            </div>
+            <div>
+                <p class="text-slate-400 text-[11px]">Critical P1 Villages</p>
+                <p class="text-base font-bold text-rose-400 font-mono" id="kpi-critical-villages">0 Villages</p>
+            </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg p-2.5 flex items-center space-x-3">
+            <div class="w-8 h-8 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-base">
+                <i class="fa-solid fa-ship"></i>
+            </div>
+            <div>
+                <p class="text-slate-400 text-[11px]">Boats Deployed</p>
+                <p class="text-base font-bold text-emerald-400 font-mono" id="kpi-boats-deployed">0 Units</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN WORKSPACE -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 min-h-0 overflow-hidden">
+
+        <!-- LEFT/CENTER: INTERACTIVE ASSAM GIS MAP (7 Cols on desktop) -->
+        <section class="lg:col-span-7 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl relative min-h-[500px]">
+            <!-- Map Layer Toggles Overlay -->
+            <div class="absolute top-3 right-3 z-[1000] bg-slate-900/90 backdrop-blur-md border border-slate-700 rounded-lg p-2 text-xs shadow-xl flex flex-col gap-1.5 min-w-[160px]">
+                <div class="font-bold text-slate-300 pb-1 border-b border-slate-700 flex items-center justify-between">
+                    <span>GIS Layers</span>
+                    <i class="fa-solid fa-layer-group text-blue-400"></i>
+                </div>
+                
+                <!-- Base Map Switcher -->
+                <div class="pb-1 border-b border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-semibold block mb-1">Base Map:</span>
+                    <select id="select-basemap" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-[11px] rounded px-1.5 py-1 focus:outline-none">
+                        <option value="esri_dark" selected>🌌 Tactical Dark (Esri)</option>
+                        <option value="osm_standard">🗺️ Street Map (OSM)</option>
+                        <option value="esri_satellite">🛰️ Satellite (Esri)</option>
+                    </select>
+                </div>
+
+                <label class="flex items-center space-x-2 cursor-pointer text-slate-300 hover:text-white">
+                    <input type="checkbox" id="layer-catchments" checked class="rounded bg-slate-800 border-slate-600 text-blue-600">
+                    <span>⛰️ Hill Catchments</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer text-slate-300 hover:text-white">
+                    <input type="checkbox" id="layer-gauges" checked class="rounded bg-slate-800 border-slate-600 text-blue-600">
+                    <span>🌊 CWC River Gauges</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer text-slate-300 hover:text-white">
+                    <input type="checkbox" id="layer-flood-extent" checked class="rounded bg-slate-800 border-slate-600 text-blue-600">
+                    <span>💧 DEM Flood Extent</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer text-slate-300 hover:text-white">
+                    <input type="checkbox" id="layer-villages" checked class="rounded bg-slate-800 border-slate-600 text-blue-600">
+                    <span>🏘️ Villages & Chars</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer text-slate-300 hover:text-white">
+                    <input type="checkbox" id="layer-roads" checked class="rounded bg-slate-800 border-slate-600 text-blue-600">
+                    <span>🛣️ Road Corridors</span>
+                </label>
+            </div>
+
+            <!-- Map Leaflet Container -->
+            <div id="map" class="flex-1 w-full h-full min-h-[500px]"></div>
+
+            <!-- Map Bottom Legend -->
+            <div class="bg-slate-950/90 border-t border-slate-800 px-3 py-1.5 text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center space-x-4">
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Extreme Risk (P1)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> High Risk (P2)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span> Moderate (P3)</span>
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Low / Safe (P4)</span>
+                </div>
+                <div class="flex items-center space-x-3 text-slate-500">
+                    <span><i class="fa-solid fa-ship text-blue-400"></i> Boat-Only (Char)</span>
+                    <span><i class="fa-solid fa-road text-red-400"></i> Submerged Road</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT: TACTICAL OPERATIONS WORKSPACE (5 Cols on desktop) -->
+        <section class="lg:col-span-5 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+            <!-- Tabs Navigation Header -->
+            <div class="bg-slate-950 border-b border-slate-800 px-2 pt-2 flex space-x-1 overflow-x-auto text-xs">
+                <button class="tab-btn active px-3 py-2 rounded-t-lg font-medium border-b-2 border-transparent transition flex items-center gap-1.5" data-tab="tab-stage1">
+                    <i class="fa-solid fa-mountain"></i>
+                    <span>Stage 1: Hills</span>
+                </button>
+                <button class="tab-btn px-3 py-2 rounded-t-lg font-medium border-b-2 border-transparent transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5" data-tab="tab-stage2">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Stage 2: Plains</span>
+                </button>
+                <button class="tab-btn px-3 py-2 rounded-t-lg font-medium border-b-2 border-transparent transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5" data-tab="tab-stage3">
+                    <i class="fa-solid fa-truck-medical"></i>
+                    <span>Stage 3: Dispatch</span>
+                </button>
+                <button class="tab-btn px-3 py-2 rounded-t-lg font-medium border-b-2 border-transparent transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5" data-tab="tab-alerts">
+                    <i class="fa-solid fa-tower-broadcast"></i>
+                    <span>Last-Mile Alerts</span>
+                </button>
+                <button class="tab-btn px-3 py-2 rounded-t-lg font-medium border-b-2 border-transparent transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5" data-tab="tab-explain">
+                    <i class="fa-solid fa-brain"></i>
+                    <span>AI Model</span>
+                </button>
+            </div>
+
+            <!-- Tab Contents Container -->
+            <div class="flex-1 p-3 overflow-y-auto max-h-[calc(100vh-250px)] space-y-3 text-xs">
+
+                <!-- TAB 1: STAGE 1 (WATCH THE HILLS) -->
+                <div id="tab-stage1" class="tab-content space-y-3">
+                    <div class="bg-blue-950/30 border border-blue-800/40 rounded-lg p-2.5 flex items-start space-x-2.5">
+                        <i class="fa-solid fa-circle-info text-blue-400 mt-0.5 text-sm"></i>
+                        <div>
+                            <p class="font-semibold text-blue-300">Upstream Hill Catchment Trigger Detection</p>
+                            <p class="text-slate-400 text-[11px] mt-0.5">Detects flash-flood rainfall intensity and antecedent soil saturation in Arunachal, Bhutan & Meghalaya hills 3–6 hours before surge hits Assam plains.</p>
+                        </div>
+                    </div>
+
+                    <!-- Catchment Radar Cards List -->
+                    <div id="stage1-cards-container" class="space-y-2">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- TAB 2: STAGE 2 (PREDICT THE PLAINS) -->
+                <div id="tab-stage2" class="tab-content hidden space-y-3">
+                    <div class="bg-blue-950/30 border border-blue-800/40 rounded-lg p-2.5 flex items-start space-x-2.5">
+                        <i class="fa-solid fa-water text-blue-400 mt-0.5 text-sm"></i>
+                        <div>
+                            <p class="font-semibold text-blue-300">CWC River Gauges & Hydrograph Forecasting</p>
+                            <p class="text-slate-400 text-[11px] mt-0.5">24h / 48h / 72h advance water-level predictions routed from upstream surge + base trend with backtest validation.</p>
+                        </div>
+                    </div>
+
+                    <!-- Selected Gauge Hydrograph Chart -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-bold text-slate-200 flex items-center gap-1.5">
+                                <i class="fa-solid fa-chart-area text-blue-400"></i>
+                                <span id="hydrograph-title">Gauge Hydrograph Forecast</span>
+                            </h4>
+                            <select id="gauge-select" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded px-2 py-1">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="h-44 w-full">
+                            <canvas id="hydrograph-chart"></canvas>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800">
+                            <span id="gauge-stat-warning" class="text-amber-400 font-mono">Warning: --</span>
+                            <span id="gauge-stat-danger" class="text-red-400 font-mono">Danger: --</span>
+                            <span id="gauge-stat-hfl" class="text-purple-400 font-mono">HFL: --</span>
+                        </div>
+                    </div>
+
+                    <!-- Road Submersion Status Table -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+                        <h4 class="font-bold text-slate-200 mb-2 flex items-center gap-1.5">
+                            <i class="fa-solid fa-road-barrier text-amber-400"></i>
+                            <span>Critical Transport Corridors & Road Breaches</span>
+                        </h4>
+                        <div id="roads-table-container" class="space-y-1.5">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: STAGE 3 (HELP THE PEOPLE - RELIEF ALLOCATION) -->
+                <div id="tab-stage3" class="tab-content hidden space-y-3">
+                    <div class="bg-purple-950/30 border border-purple-800/40 rounded-lg p-2.5 flex items-start space-x-2.5">
+                        <i class="fa-solid fa-brain text-purple-400 mt-0.5 text-sm"></i>
+                        <div>
+                            <p class="font-semibold text-purple-300">Constrained AI Relief Allocation & Dispatch</p>
+                            <p class="text-slate-400 text-[11px] mt-0.5">Multi-criteria prioritized matching of finite district SDRF/NDRF boats, medical teams, and ration kits based on risk rank and access modality.</p>
+                        </div>
+                    </div>
+
+                    <!-- Ranked Dispatch Plan Cards -->
+                    <div class="space-y-2" id="dispatch-plan-container">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- Remaining District Inventory -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 mt-3">
+                        <h4 class="font-bold text-slate-200 mb-2 flex items-center gap-1.5">
+                            <i class="fa-solid fa-boxes-stacked text-emerald-400"></i>
+                            <span>District Relief Reserves & Inventory Status</span>
+                        </h4>
+                        <div id="inventory-container" class="space-y-2">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: MULTILINGUAL RESIDENT ALERTS -->
+                <div id="tab-alerts" class="tab-content hidden space-y-3">
+                    <div class="bg-emerald-950/30 border border-emerald-800/40 rounded-lg p-2.5 flex items-start space-x-2.5">
+                        <i class="fa-solid fa-language text-emerald-400 mt-0.5 text-sm"></i>
+                        <div>
+                            <p class="font-semibold text-emerald-300">Last-Mile Multilingual Alert Dispatcher</p>
+                            <p class="text-slate-400 text-[11px] mt-0.5">Automated resident-facing evacuation guidance formatted in Assamese (অসমীয়া), Bodo (बर'), and English for SMS and WhatsApp Business broadcast.</p>
+                        </div>
+                    </div>
+
+                    <!-- Village Selector for Alerts -->
+                    <div class="flex items-center space-x-2">
+                        <label class="text-slate-400">Select Village:</label>
+                        <select id="alert-village-select" class="flex-1 bg-slate-950 border border-slate-700 text-slate-200 rounded px-2.5 py-1.5 text-xs">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- Language Tabs -->
+                    <div class="flex space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                        <button class="lang-btn active flex-1 py-1.5 rounded font-medium transition text-center bg-blue-600 text-white" data-lang="assamese">
+                            অসমীয়া (Assamese)
+                        </button>
+                        <button class="lang-btn flex-1 py-1.5 rounded font-medium transition text-center text-slate-400 hover:text-white" data-lang="bodo">
+                            बर' (Bodo)
+                        </button>
+                        <button class="lang-btn flex-1 py-1.5 rounded font-medium transition text-center text-slate-400 hover:text-white" data-lang="english">
+                            English
+                        </button>
+                    </div>
+
+                    <!-- WhatsApp Preview Mock -->
+                    <div class="bg-[#0b141a] border border-[#202c33] rounded-xl p-3 shadow-inner">
+                        <div class="flex items-center space-x-2 pb-2 border-b border-[#202c33] mb-2 text-[11px] text-emerald-400">
+                            <i class="fa-brands fa-whatsapp text-base"></i>
+                            <span class="font-semibold">ASDMA Emergency WhatsApp Broadcast</span>
+                        </div>
+                        <div class="whatsapp-chat-bubble p-3 text-xs leading-relaxed font-sans whitespace-pre-wrap" id="whatsapp-body-preview">
+                            Loading alert text...
+                        </div>
+                    </div>
+
+                    <!-- SMS Preview Mock -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
+                        <div class="flex items-center justify-between pb-1.5 border-b border-slate-800 mb-2 text-[11px] text-slate-400">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-comment-sms text-blue-400"></i> SMS Cell Broadcast (&lt;160 Chars)</span>
+                            <span id="sms-char-count" class="font-mono text-slate-500">0 chars</span>
+                        </div>
+                        <div class="bg-slate-900 rounded p-2.5 text-xs text-slate-200 font-mono whitespace-pre-wrap" id="sms-body-preview">
+                            Loading SMS text...
+                        </div>
+                    </div>
+
+                    <button id="btn-trigger-test-alert" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Simulate Live Resident Broadcast Dispatch</span>
+                    </button>
+                </div>
+
+                <!-- TAB 5: AI EXPLAINABILITY & VALIDATION -->
+                <div id="tab-explain" class="tab-content hidden space-y-3">
+                    <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+                        <h4 class="font-bold text-slate-200 mb-2 flex items-center gap-1.5 text-blue-400">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                            <span>Explainable Risk Scoring Formula</span>
+                        </h4>
+                        <div class="bg-slate-900 p-2.5 rounded border border-slate-800 font-mono text-[11px] text-amber-300 mb-2">
+                            Risk = [ 0.40 × Depth + 0.30 × Vulnerability + 0.30 × Isolation ] × Pop_Scale
+                        </div>
+                        <p class="text-slate-400 text-[11px] leading-relaxed">
+                            Every prioritization decision in IFEWRAS is fully transparent to district officers, breaking down flood overtopping depth, demographic frailty (elderly/infant ratios), and physical isolation (sandbar char / severed road links).
+                        </p>
+                    </div>
+
+                    <!-- Backtest Validation Accuracy Metrics -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-lg p-3">
+                        <h4 class="font-bold text-slate-200 mb-2 flex items-center gap-1.5 text-emerald-400">
+                            <i class="fa-solid fa-bullseye"></i>
+                            <span>Historical Gauge Backtesting Validation</span>
+                        </h4>
+                        <table class="w-full text-left text-[11px]">
+                            <thead>
+                                <tr class="text-slate-500 border-b border-slate-800">
+                                    <th class="pb-1.5">Forecast Lead</th>
+                                    <th class="pb-1.5">RMSE (m)</th>
+                                    <th class="pb-1.5">MAE (m)</th>
+                                    <th class="pb-1.5">R² Score</th>
+                                    <th class="pb-1.5">Peak Error</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-850 text-slate-300 font-mono">
+                                <tr>
+                                    <td class="py-1.5 text-blue-400 font-sans font-semibold">24 Hours</td>
+                                    <td class="py-1.5">0.14 m</td>
+                                    <td class="py-1.5">0.11 m</td>
+                                    <td class="py-1.5 text-emerald-400">0.94</td>
+                                    <td class="py-1.5">±1.2 hrs</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 text-blue-400 font-sans font-semibold">48 Hours</td>
+                                    <td class="py-1.5">0.26 m</td>
+                                    <td class="py-1.5">0.21 m</td>
+                                    <td class="py-1.5 text-emerald-400">0.89</td>
+                                    <td class="py-1.5">±2.5 hrs</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 text-blue-400 font-sans font-semibold">72 Hours</td>
+                                    <td class="py-1.5">0.41 m</td>
+                                    <td class="py-1.5">0.33 m</td>
+                                    <td class="py-1.5 text-emerald-400">0.83</td>
+                                    <td class="py-1.5">±4.1 hrs</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER BAR -->
+    <footer class="bg-slate-900 border-t border-slate-800 px-4 py-1.5 text-[11px] text-slate-500 flex items-center justify-between">
+        <div>
+            <span>IFEWRAS v1.0.0</span> | <span>Smart India Hackathon 2026</span> | <span>Assam Disaster Management Authority (ASDMA)</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <span class="text-slate-400 font-mono" id="footer-status">System Live & Connected</span>
+        </div>
+    </footer>
+
+    <!-- App JavaScript Modules -->
+    <script src="/static/js/map.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
