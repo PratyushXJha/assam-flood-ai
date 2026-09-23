@@ -27,9 +27,18 @@ async def get_relief_allocation_plan():
 
 @router.get("/alerts")
 async def get_multilingual_resident_alerts():
-    """Retrieve multilingual resident emergency alerts (Assamese, Bodo, English)."""
+    """Retrieve multilingual resident emergency alerts (English, Hindi, Assamese)."""
     state = scenario_manager.get_full_pipeline_state()
     return {
         "timestamp_offset": state["current_step"]["time_label"],
         "alerts": state["stage3"]["alerts"]
+    }
+
+@router.get("/zones")
+async def get_hazard_zones():
+    """Retrieve RED / YELLOW / GREEN hazard zones with the villages inside each."""
+    state = scenario_manager.get_full_pipeline_state()
+    return {
+        "timestamp_offset": state["current_step"]["time_label"],
+        "zones": state["stage3"]["zones"]
     }

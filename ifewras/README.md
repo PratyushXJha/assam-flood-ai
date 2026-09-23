@@ -1,114 +1,141 @@
-# IFEWRAS — Integrated Flood Early Warning + Rescue Allocation System
+# FloodCast AI — Flood Early Warning, Forecasting & Rescue Allocation
 **Smart India Hackathon 2026 | Problem Statement: IH260071 + SIH260192 (Merged)**
 **Designed for: Assam State Disaster Management Authority (ASDMA) & SDRF Assam**
 
 ---
 
-## 🌊 Executive Overview
+## 🌊 Overview
 
-Assam's flood crisis is a multi-stage cascade: intense rainfall in upstream hill catchments (Arunachal Pradesh, Meghalaya, Karbi Anglong) surges into the Brahmaputra and Barak river corridors, inundating downstream plains and char (river island) communities with minimal warning.
+Assam's flood crisis is a multi-stage cascade: intense rainfall in upstream hill catchments (Arunachal Pradesh, Meghalaya, Karbi Anglong) surges into the Brahmaputra and Barak river corridors, inundating downstream plains and char (river island) communities with little warning.
 
-**IFEWRAS** closes the gap from upstream cloudburst detection to last-mile localized resident evacuation and prioritized rescue dispatch across three modular stages:
+**FloodCast AI** follows the flood from upstream cloudburst detection to last-mile resident alerts and rescue dispatch in three stages:
 
 ```
 ┌───────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
 │ Stage 1: Watch the Hills  │ ───▶ │ Stage 2: Predict Plains   │ ───▶ │ Stage 3: Help the People  │
 ├───────────────────────────┤      ├───────────────────────────┤      ├───────────────────────────┤
 │ • GPM-IMERG Satellite     │      │ • CWC River Gauges        │      │ • Explainable AI Risk     │
-│ • Hill Catchment Flow     │      │ • 24h / 48h / 72h Forecast│      │ • Access Profiling        │
+│ • Hill Catchment Flow     │      │ • 24h / 48h / 72h Forecast│      │ • Red / Yellow / Green    │
 │ • Soil Moisture Saturation│      │ • DEM Bathtub Flood Fill  │      │ • Constrained Boat Alloc  │
-│ • 3–6 hr Advance Triggers │      │ • Village Depth & Roads   │      │ • Assamese & Bodo Alerts  │
+│ • 3–6 hr Advance Triggers │      │ • Village Depth & Roads   │      │ • SMS + AI Voice Alerts   │
 └───────────────────────────┘      └───────────────────────────┘      └───────────────────────────┘
 ```
 
 ---
 
-## 🚀 Quickstart & Installation
+## ✨ What's new in FloodCast AI 2.0
 
-### Prerequisites
-- Python 3.10+ (FastAPI, Uvicorn, NumPy, Pandas, Starlette)
+| Feature | How it works |
+| :--- | :--- |
+| **Separate pages** | The control centre is split into **Dashboard**, **Map & Zones**, **Forecast**, **Relief**, **Alerts** and **Settings** (hash routes like `#/map`) instead of one crowded screen. |
+| **Working Play button** | Play steps through the 72-hour dataset (`backend/app/data/assam_72h_dataset.csv`, 73 hourly rows). For each hour the server runs the full Stage 1 → 2 → 3 pipeline (`POST /api/v1/simulation/compute/{hour}`) and the map, KPIs and charts redraw from the computed result. Gauge forecasts use the rise rate observed over the previous 6 hours of data. You can load your own CSV in Settings. |
+| **Red-zone popups** | Each flood zone is graded RED / YELLOW / GREEN. Only a zone that *newly* turns RED raises a popup, centred on the map at that zone. Yellow and green zones never pop up. On other pages a small toast links to the map. |
+| **Buzzer alarms** | A synthesised buzzer (Web Audio, no files) sounds in the control centre when a zone turns red or an alert is sent, and on the resident device (`/receiver`) when an alert arrives. |
+| **Short multilingual alerts** | Every alert is generated in **English, Hindi and Assamese**. English fits one SMS (≤160 chars). Hindi and Assamese fit two Unicode SMS parts (≤134 chars). |
+| **Throttled SMS** | Messages are queued and sent one at a time at a low, steady rate (default 30 SMS/min and 6 calls/min), with retries and backoff, so carriers don't rate-limit or block the sender. Rates are adjustable in Settings. |
+| **AI voice calls** | Critical (red) alerts also place an automated call that reads: *"There will be a flood in your area… Please evacuate and proceed to the nearest relief centre."* Scripts exist in English, Hindi and Assamese. |
 
-### Launch Dashboard & API Server
-```powershell
-cd C:\Users\admin\.gemini\antigravity\scratch\ifewras
-python run_server.py
-```
+### Real SMS and voice calls (optional)
+By default FloodCast AI runs in **simulated (dry-run)** mode, and alerts go to demo recipients. To send real messages:
 
-- **Operations Dashboard:** [http://127.0.0.1:8000](http://127.0.0.1:8000)
-- **Interactive Swagger API Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **OpenAPI JSON Spec:** [http://127.0.0.1:8000/openapi.json](http://127.0.0.1:8000/openapi.json)
+1. Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_FROM_NUMBER`.
+2. Create `backend/app/data/recipients.csv` with columns `phone,village_id,language` (phone in E.164 form, e.g. `+91…`; language `english` / `hindi` / `assamese`).
+
+Voice calls use Twilio `<Say>` with Google `en-IN` and `hi-IN` voices. Twilio has no Assamese voice, so Assamese scripts are read by the Bengali `bn-IN` voice, which uses the same script. You can override the voices with `VOICE_EN`, `VOICE_HI` and `VOICE_AS`. Send rates can also be set with `SMS_PER_MINUTE` and `CALLS_PER_MINUTE`.
 
 ---
 
-## 🧪 Running Automated Tests
+## 🚀 Quickstart
 
-Run the complete test suite across Stage 1, Stage 2, Stage 3, and End-to-End integration:
+### Prerequisites
+- Python 3.10+ (FastAPI, Uvicorn, NumPy)
+
+### Launch the control centre and API
+```powershell
+pip install -r requirements.txt
+python run_server.py
+```
+
+- **Control centre:** [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- **Resident device view:** [http://127.0.0.1:8000/receiver](http://127.0.0.1:8000/receiver). Open it on a phone, pick a location and language, and tap *Turn on alerts*.
+- **Swagger API docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+### Demo in 30 seconds
+1. Open the control centre and the `/receiver` page (tap *Turn on alerts* there).
+2. Press **Play**. Zones start turning red from about T+36h.
+3. The control centre buzzes and a red-zone popup opens on the map. SMS and voice calls queue at the throttled rate (see **Alerts**).
+4. The resident device buzzes, shows the SMS in its language and plays the AI voice message.
+
+---
+
+## 🧪 Running tests
 ```powershell
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
+To regenerate the 72-hour dataset from the calibrated historical anchors:
+```powershell
+python scripts/generate_72h_dataset.py
+```
+
 ---
 
-## 📐 System Pipeline Architecture
+## 📐 Pipeline
 
 ### Stage 1: Watch the Hills (Upstream Trigger Detection)
-- **Catchments Monitored:** Siang/Upper Brahmaputra, Subansiri, Lohit & Dibang, Jia Bharali/Kameng, Kopili/Meghalaya Escarpment, Manas-Beki, Barak Headwaters.
-- **Runoff Physics:**
+- **Catchments monitored:** Siang/Upper Brahmaputra, Subansiri, Lohit & Dibang, Jia Bharali/Kameng, Kopili/Meghalaya Escarpment, Manas-Beki, Barak Headwaters.
+- **Runoff physics:**
   $$Q = \frac{C_{\text{eff}} \times I \times A}{3.6}$$
   where antecedent soil saturation (>75%) magnifies the runoff coefficient $C_{\text{eff}}$ by up to 1.45×.
-- **Output:** Flash-flood triggers flagged 3 to 6 hours before water enters Assam plains.
 
-### Stage 2: Predict the Plains (Hydrological Forecast & Flood Extent)
-- **CWC River Gauges:** Dibrugarh, Nematighat (Majuli), Tezpur, Pandu (Guwahati), Goalpara, Dhubri, Silchar.
-- **Hydrograph Routing:** 24h, 48h, and 72h predicted water levels with backtest accuracy ($R^2 = 0.94$, RMSE = $0.14\text{m}$ at 24h).
-- **DEM Flood-Fill Model:** Elevation-head inundation solver estimating village depths and identifying submerged road segments (e.g. NH-715 Kaziranga, Majuli Spine Road).
+### Stage 2: Predict the Plains
+- **CWC river gauges:** Dibrugarh, Nematighat (Majuli), Tezpur, Pandu (Guwahati), Goalpara, Dhubri, Silchar.
+- **Hydrograph routing:** 24h, 48h and 72h water levels from the upstream surge plus the observed trend (backtest $R^2 = 0.94$, RMSE = $0.14\text{m}$ at 24h).
+- **DEM flood fill:** village depths, flood extent and submerged roads.
 
-### Stage 3: Help the People (AI Risk Scoring, Relief Allocation & Multilingual Alerts)
-- **Explainable Risk Scoring:**
+### Stage 3: Help the People
+- **Explainable risk score:**
   $$\text{Risk} = \left[ 0.40 \cdot D_{\text{depth}} + 0.30 \cdot V_{\text{vuln}} + 0.30 \cdot I_{\text{isolation}} \right] \times P_{\text{pop\_scale}}$$
-- **Access Profiling:** Classifies each settlement as `ROAD_CONNECTED`, `BOAT_ONLY` (char island / submerged approach), or `HELI_ONLY`.
-- **Resource Allocation Optimization:** Constrained matching of finite district SDRF inflatable rubber boats, NDRF 40HP motorized powerboats, Mobile Medical Teams, Water Purification Jerrycans, and Dry Ration Kits down the prioritized risk leaderboard.
-- **Last-Mile Multilingual Alerts:** Resident-facing SMS and WhatsApp evacuation notices automatically generated in:
-  1. **Assamese (অসমীয়া)**
-  2. **Bodo (बर')**
-  3. **English**
+- **Hazard zones:** a zone is **RED** if it contains a P1 (extreme-risk) village or the bank is overtopped by ≥1.5 m, **YELLOW** if water is above the bank, and **GREEN** otherwise.
+- **Relief allocation:** matches finite SDRF/NDRF boats, medical teams and relief kits down the risk ranking.
+- **Alerts:** short SMS plus an AI voice call in English, Hindi and Assamese, sent through the throttled dispatcher.
 
 ---
 
-## 🎮 Hackathon Historical Replay Demo Walkthrough
+## 🔌 Key API endpoints
 
-Step through the 72-hour historical replay in the dashboard:
-
-| Step | Offset | Phase | System Behavior |
-| :--- | :--- | :--- | :--- |
-| **0** | **T+00h** | *Upstream Cloudburst* | Heavy rainfall in Arunachal & Meghalaya triggers **RED ALERTS** in Stage 1 with 3-6h lead time. Plains rivers remain normal. |
-| **1** | **T+24h** | *Upper Reach Surge* | Runoff surges into Upper Assam; Dibrugarh & Nematighat cross Warning Marks. Majuli and Dhemaji waterlogging begins. |
-| **2** | **T+48h** | *Peak Flood Crisis* | Central Assam overtopped; Nematighat & Tezpur exceed Danger Level. Majuli & Morigaon chars cut off. P1 boat dispatches and Assamese/Bodo broadcasts triggered. |
-| **3** | **T+72h** | *Downstream Peak* | Flood surge pools in Lower Assam (Barpeta Mandia Chars, Dhubri border). Multi-district relief coordination active. |
+| Method | Path | Purpose |
+| :--- | :--- | :--- |
+| POST | `/api/v1/simulation/compute/{hour}` | Run the pipeline on dataset hour 0–72 |
+| GET / POST | `/api/v1/simulation/dataset` | Describe or upload (raw CSV body) the 72-hour dataset |
+| GET | `/api/v1/simulation/dataset/template` | Download the built-in dataset CSV |
+| GET | `/api/v1/stage3/zones` | Red / yellow / green hazard zones |
+| POST | `/api/v1/alerts/dispatch` | Queue SMS + voice alerts for a `zone_id` or `village_ids` |
+| GET | `/api/v1/alerts/dispatch/status` | Queue depth, sent/failed counts, delivery log |
+| GET / PUT | `/api/v1/alerts/settings` | SMS / call send rate and retry policy |
+| GET | `/api/v1/alerts/feed?since=` | Alerts for resident devices |
 
 ---
 
-## 📂 Project Structure
+## 📂 Project structure
 
 ```
 ifewras/
-├── backend/
-│   ├── app/
-│   │   ├── config.py                     # Assam geo bounds, thresholds, district inventory
-│   │   ├── main.py                       # FastAPI application & static mounting
-│   │   ├── stage1_hills/                 # Upstream catchment & trigger engine
-│   │   ├── stage2_plains/                # CWC gauge hydrographs, DEM extent & roads
-│   │   ├── stage3_relief/                # Risk scoring, access profiler, relief allocation & alerts
-│   │   ├── scenarios/                    # 72-hour Assam historical flood replay engine
-│   │   └── api/                          # REST API route handlers
-├── frontend/
-│   └── static/
-│       ├── index.html                    # ASDMA Single Pane of Glass Dashboard
-│       ├── css/custom.css                # Tactical dark styling & radar pulses
-│       └── js/
-│           ├── map.js                    # Leaflet GIS map renderer
-│           └── app.js                    # UI state, chart hydrographs & alert simulation
-├── tests/                                # Automated unit & end-to-end integration tests
-├── run_server.py                         # Single-command launcher
-└── README.md
+├── backend/app/
+│   ├── config.py              # Geo bounds, thresholds, voice locales, dispatch rates
+│   ├── main.py                # FastAPI app, static pages, dispatcher lifecycle
+│   ├── data/                  # 72-hour telemetry dataset (CSV)
+│   ├── stage1_hills/          # Upstream catchment & trigger engine
+│   ├── stage2_plains/         # Gauge forecasts, DEM extent, villages & roads
+│   ├── stage3_relief/         # Risk, access, allocation, zones & multilingual alerts
+│   ├── alerts/dispatcher.py   # Throttled SMS + AI voice-call queue (Twilio or simulated)
+│   ├── scenarios/             # Dataset loader & hour-by-hour pipeline manager
+│   └── api/                   # REST routes
+├── frontend/static/
+│   ├── index.html             # Control centre (Dashboard, Map, Forecast, Relief, Alerts, Settings)
+│   ├── receiver.html          # Resident device view
+│   └── js/                    # app, map, alerts, settings, sound, receiver
+├── scripts/generate_72h_dataset.py
+├── tests/
+└── run_server.py
 ```

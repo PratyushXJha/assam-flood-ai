@@ -112,7 +112,7 @@ class DEMFloodFillModel:
                 severity = "LOW_MARGINAL_WATERLOGGING"
 
         # Scale base polygon dynamically around center
-        center_lon, center_lat = zone["center"]
+        center_lat, center_lon = zone["center"]
         scaled_coords = []
         scale_mult = 1.0 + (expansion_scale * 0.15) if overtop_depth_m > 0 else 0.95
 

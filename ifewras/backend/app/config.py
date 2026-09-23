@@ -1,7 +1,11 @@
-"""Configuration and constants for the IFEWRAS system.
-Integrated Flood Early Warning + Rescue Allocation System
+"""Configuration and constants for FloodCast AI.
+AI flood early warning, forecasting and rescue allocation for Assam.
 """
+import os
 from typing import Dict, Any
+
+APP_NAME = "FloodCast AI"
+APP_VERSION = "2.0.0"
 
 # Geographic bounding box for Assam & Upstream Hill Catchments
 GEO_BOUNDS = {
@@ -77,3 +81,25 @@ EMERGENCY_CONTACTS = {
     "national_emergency_number": "112",
     "sdrf_control_room": "0361-2237011",
 }
+
+# AI voice-call locales. Twilio <Say> has no Assamese voice, so Assamese scripts are
+# read by the Bengali (bn-IN) voice, which shares the Eastern Nagari script.
+VOICE_LOCALES = {
+    "english": {"locale": "en-IN", "twilio_language": "en-IN", "twilio_voice": os.getenv("VOICE_EN", "Google.en-IN-Standard-A")},
+    "hindi": {"locale": "hi-IN", "twilio_language": "hi-IN", "twilio_voice": os.getenv("VOICE_HI", "Google.hi-IN-Standard-A")},
+    "assamese": {"locale": "as-IN", "twilio_language": "bn-IN", "twilio_voice": os.getenv("VOICE_AS", "Google.bn-IN-Standard-A")},
+}
+
+# Throttled SMS / voice dispatch. Low, steady send rates keep carriers from
+# rate-limiting or blocking the sender ID during a mass alert.
+DISPATCH_DEFAULTS = {
+    "sms_per_minute": float(os.getenv("SMS_PER_MINUTE", "30")),     # one SMS every 2 s
+    "calls_per_minute": float(os.getenv("CALLS_PER_MINUTE", "6")),  # one call every 10 s
+    "max_retries": int(os.getenv("DISPATCH_MAX_RETRIES", "3")),
+    "retry_backoff_seconds": float(os.getenv("DISPATCH_RETRY_BACKOFF", "15")),
+}
+
+# Twilio credentials (optional). Without them messages are simulated (dry run).
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
+TWILIO_FROM_NUMBER = os.getenv("TWILIO_FROM_NUMBER", "")

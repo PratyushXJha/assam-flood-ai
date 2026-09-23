@@ -105,19 +105,25 @@ class RiverForecastModel:
     def forecast_all_gauges(
         self,
         current_levels: Dict[str, float],
-        upstream_surges: Dict[str, float] = None
+        upstream_surges: Dict[str, float] = None,
+        trend_rates: Dict[str, float] = None
     ) -> List[Dict[str, Any]]:
         """
         Generate forecasts for all monitored CWC gauges.
+        trend_rates: optional observed rise rate per gauge (m/hr) derived from the dataset history.
         """
         results = []
         for gauge in self.gauges:
             gid = gauge["id"]
             current_val = current_levels.get(gid, gauge["normal_monsoon_level_m"])
+            kwargs = {}
+            if trend_rates and gid in trend_rates:
+                kwargs["trend_rate_m_per_hr"] = trend_rates[gid]
             fc = self.generate_gauge_forecast(
                 gauge_id=gid,
                 current_level_m=current_val,
-                upstream_surges=upstream_surges
+                upstream_surges=upstream_surges,
+                **kwargs
             )
             results.append(fc)
         return results

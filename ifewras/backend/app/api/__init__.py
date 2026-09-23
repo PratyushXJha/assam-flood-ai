@@ -1,2 +1,2 @@
-"""API routes package for IFEWRAS backend.
+"""API routes package for the FloodCast AI backend.
 """

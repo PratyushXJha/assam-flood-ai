@@ -1,4 +1,4 @@
-"""IFEWRAS Test Suite Package.
+"""FloodCast AI Test Suite Package.
 """
 import sys
 import os

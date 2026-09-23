@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloodCast AI - Resident Alerts</title>
+    <meta name="description" content="FloodCast AI resident device: flood alerts with buzzer and AI voice message in English, Hindi or Assamese.">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232563eb'/><path d='M5 20c3 0 3-2 6-2s3 2 6 2 3-2 6-2 3 2 4 2v4c-1 0-1-2-4-2s-3 2-6 2-3-2-6-2-3 2-6 2z' fill='white'/><path d='M16 5l6 10H10z' fill='%23fca5a5'/></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        @keyframes flash { 0%, 100% { background: #7f1d1d; } 50% { background: #b91c1c; } }
+        .alarm-flash { animation: flash 0.8s infinite; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center antialiased">
+    <div class="w-full max-w-sm min-h-screen flex flex-col bg-slate-900 border-x border-slate-800">
+        <header class="px-4 py-3 border-b border-slate-800 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center"><i class="fa-solid fa-house-flood-water"></i></div>
+            <div>
+                <h1 class="font-bold leading-tight">FloodCast AI</h1>
+                <p class="text-[11px] text-slate-400 leading-tight">Resident flood alerts</p>
+            </div>
+        </header>
+
+        <!-- Setup -->
+        <section id="setup" class="p-4 space-y-4 text-sm">
+            <p class="text-slate-300">Get a buzzer alarm, SMS text and an AI voice message when your area is in a red flood zone.</p>
+            <label class="block">
+                <span class="text-slate-400 text-xs">Your location</span>
+                <select id="rcv-village" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2">
+                    <option value="">All monitored villages</option>
+                </select>
+            </label>
+            <label class="block">
+                <span class="text-slate-400 text-xs">Language</span>
+                <select id="rcv-lang" class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2">
+                    <option value="english">English</option>
+                    <option value="hindi">हिन्दी (Hindi)</option>
+                    <option value="assamese">অসমীয়া (Assamese)</option>
+                </select>
+            </label>
+            <button id="rcv-enable" class="w-full py-3 bg-red-600 hover:bg-red-500 rounded-lg font-bold"><i class="fa-solid fa-bell"></i> Turn on alerts</button>
+            <p class="text-[11px] text-slate-500">Tapping the button allows this device to play the alarm and voice message.</p>
+        </section>
+
+        <!-- Listening -->
+        <section id="listening" class="hidden p-4 space-y-4 text-sm flex-1">
+            <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 flex items-center gap-3">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <div class="flex-1">
+                    <div class="font-semibold" id="rcv-status">Listening for alerts</div>
+                    <div class="text-[11px] text-slate-400" id="rcv-status-sub">—</div>
+                </div>
+                <button id="rcv-change" class="text-xs text-blue-400">Change</button>
+            </div>
+            <div>
+                <h2 class="text-xs text-slate-400 font-semibold mb-2">Received alerts</h2>
+                <div id="rcv-history" class="space-y-2"><p class="text-slate-500 text-xs">No alerts yet.</p></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Incoming alert overlay -->
+    <div id="alarm" class="hidden fixed inset-0 z-50 alarm-flash flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-slate-950/95 rounded-2xl border-2 border-red-500 p-5 space-y-4 shadow-2xl">
+            <div class="flex items-center gap-2 text-red-400 font-bold text-lg"><i class="fa-solid fa-triangle-exclamation"></i> FLOOD ALERT</div>
+            <p class="text-white text-base leading-relaxed" id="alarm-text">—</p>
+            <p class="text-xs text-slate-400" id="alarm-more"></p>
+            <div id="alarm-call" class="hidden bg-slate-900 border border-slate-700 rounded-xl p-3 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center animate-pulse"><i class="fa-solid fa-phone-volume"></i></div>
+                <div class="flex-1 text-sm">
+                    <div class="font-semibold">FloodCast AI voice call</div>
+                    <div class="text-[11px] text-slate-400" id="alarm-call-status">Connecting…</div>
+                </div>
+                <button id="alarm-replay" class="text-xs px-2 py-1 bg-slate-800 rounded"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+            <button id="alarm-dismiss" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 rounded-lg font-semibold">I have seen this</button>
+        </div>
+    </div>
+
+    <script src="/static/js/sound.js"></script>
+    <script src="/static/js/receiver.js"></script>
+</body>
+</html>

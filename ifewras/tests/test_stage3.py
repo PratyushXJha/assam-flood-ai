@@ -11,7 +11,7 @@ if backend_dir not in sys.path:
 from app.stage3_relief.risk_scorer import RiskScorer
 from app.stage3_relief.access_profiler import AccessProfiler
 from app.stage3_relief.allocation_engine import ReliefAllocationEngine
-from app.stage3_relief.alert_generator import AlertGenerator
+from app.stage3_relief.alert_generator import AlertGenerator, SMS_CHAR_LIMITS
 
 class TestStage3(unittest.TestCase):
     def setUp(self):
@@ -83,17 +83,33 @@ class TestStage3(unittest.TestCase):
             "access_mode": "BOAT_ONLY"
         }
         alerts = self.alert_generator.generate_village_alerts(plan_item)
-        self.assertIn("assamese", alerts["languages"])
-        self.assertIn("bodo", alerts["languages"])
-        self.assertIn("english", alerts["languages"])
+        for lang in ("english", "hindi", "assamese"):
+            self.assertIn(lang, alerts["languages"])
+            self.assertIn("voice_script", alerts["languages"][lang])
+        self.assertTrue(alerts["is_critical"])
 
         # Check Assamese characters present
         assamese_text = alerts["languages"]["assamese"]["sms_body"]
         self.assertTrue(any(ord(c) >= 0x0980 and ord(c) <= 0x09FF for c in assamese_text))
 
-        # Check Bodo / Devanagari characters present
-        bodo_text = alerts["languages"]["bodo"]["sms_body"]
-        self.assertTrue(any(ord(c) >= 0x0900 and ord(c) <= 0x097F for c in bodo_text))
+        # Check Hindi / Devanagari characters present
+        hindi_text = alerts["languages"]["hindi"]["sms_body"]
+        self.assertTrue(any(ord(c) >= 0x0900 and ord(c) <= 0x097F for c in hindi_text))
+
+        # English voice script carries the evacuation instruction
+        self.assertIn("evacuate and proceed to the nearest relief centre", alerts["languages"]["english"]["voice_script"])
+
+    def test_alert_sms_within_character_limits(self):
+        long_plan = {
+            "village_id": "V", "village_name": "Laharighat Riverbank", "district": "Morigaon",
+            "risk_score": 90.0, "risk_tier": "EXTREME_PRIORITY_P1", "estimated_flood_depth_m": 2.45,
+            "staging_hub": "Laharighat PWD Inspection Bungalow Hill Very Long Relief Camp Name",
+        }
+        alerts = self.alert_generator.generate_village_alerts(long_plan)
+        for lang, data in alerts["languages"].items():
+            self.assertLessEqual(len(data["sms_body"]), SMS_CHAR_LIMITS[lang], lang)
+            self.assertLessEqual(data["sms_segments"], 2, lang)
+        self.assertEqual(alerts["languages"]["english"]["sms_segments"], 1)
 
 if __name__ == "__main__":
     unittest.main()
