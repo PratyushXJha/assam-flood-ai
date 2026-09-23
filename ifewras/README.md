@@ -33,7 +33,11 @@ Assam's flood crisis is a multi-stage cascade: intense rainfall in upstream hill
 | **Buzzer alarms** | A synthesised buzzer (Web Audio, no files) sounds in the control centre when a zone turns red or an alert is sent, and on the resident device (`/receiver`) when an alert arrives. |
 | **Short multilingual alerts** | Every alert is generated in **English, Hindi and Assamese**. English fits one SMS (≤160 chars). Hindi and Assamese fit two Unicode SMS parts (≤134 chars). |
 | **Throttled SMS** | Messages are queued and sent one at a time at a low, steady rate (default 30 SMS/min and 6 calls/min), with retries and backoff, so carriers don't rate-limit or block the sender. Rates are adjustable in Settings. |
+| **AI assistant** | A chat assistant (robot button, bottom-right on every page, or **AI briefing** on the Dashboard) answers plain-language questions about the live situation: overview, red zones, any village or district, river levels and forecasts, hill rainfall, boats and reserves, alert delivery, next steps and helplines. It accepts English, Hindi and Assamese, supports voice input and can read answers aloud. |
 | **AI voice calls** | Critical (red) alerts also place an automated call that reads: *"There will be a flood in your area… Please evacuate and proceed to the nearest relief centre."* Scripts exist in English, Hindi and Assamese. |
+
+### AI assistant: Claude or built-in NLP
+The assistant always works offline with a built-in NLP engine (keyword intent classification plus fuzzy village and district matching, in English, Hindi and Assamese). Set `ANTHROPIC_API_KEY` to have **Claude** (`claude-opus-5`) answer instead. Claude answers by calling read-only tools over the live data (`backend/app/assistant/tools.py`), so every number comes from the computed state. If Claude is unreachable, the assistant falls back to the built-in engine automatically. Options: `ASSISTANT_MODE=offline|claude`, `ASSISTANT_MODEL`, `ASSISTANT_EFFORT` (default `medium`). The assistant can only read data; it never sends alerts or changes settings.
 
 ### Real SMS and voice calls (optional)
 By default FloodCast AI runs in **simulated (dry-run)** mode, and alerts go to demo recipients. To send real messages:
@@ -114,6 +118,8 @@ python scripts/generate_72h_dataset.py
 | GET | `/api/v1/alerts/dispatch/status` | Queue depth, sent/failed counts, delivery log |
 | GET / PUT | `/api/v1/alerts/settings` | SMS / call send rate and retry policy |
 | GET | `/api/v1/alerts/feed?since=` | Alerts for resident devices |
+| POST | `/api/v1/assistant/chat` | Ask the AI assistant (`{"message": "...", "history": [...]}`) |
+| GET | `/api/v1/assistant/status` | Assistant mode (Claude or built-in NLP) and suggested questions |
 
 ---
 
@@ -129,12 +135,13 @@ ifewras/
 │   ├── stage2_plains/         # Gauge forecasts, DEM extent, villages & roads
 │   ├── stage3_relief/         # Risk, access, allocation, zones & multilingual alerts
 │   ├── alerts/dispatcher.py   # Throttled SMS + AI voice-call queue (Twilio or simulated)
+│   ├── assistant/             # AI assistant: situation tools, Claude tool loop, offline NLP
 │   ├── scenarios/             # Dataset loader & hour-by-hour pipeline manager
 │   └── api/                   # REST routes
 ├── frontend/static/
 │   ├── index.html             # Control centre (Dashboard, Map, Forecast, Relief, Alerts, Settings)
 │   ├── receiver.html          # Resident device view
-│   └── js/                    # app, map, alerts, settings, sound, receiver
+│   └── js/                    # app, map, alerts, settings, sound, receiver, assistant
 ├── scripts/generate_72h_dataset.py
 ├── tests/
 └── run_server.py

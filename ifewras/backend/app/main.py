@@ -15,6 +15,7 @@ from app.api.routes_stage2 import router as stage2_router
 from app.api.routes_stage3 import router as stage3_router
 from app.api.routes_simulation import router as simulation_router
 from app.api.routes_alerts import router as alerts_router
+from app.api.routes_assistant import router as assistant_router
 
 
 @asynccontextmanager
@@ -46,6 +47,7 @@ app.include_router(stage2_router, prefix="/api/v1")
 app.include_router(stage3_router, prefix="/api/v1")
 app.include_router(simulation_router, prefix="/api/v1")
 app.include_router(alerts_router, prefix="/api/v1")
+app.include_router(assistant_router, prefix="/api/v1")
 
 # Locate static folder
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
